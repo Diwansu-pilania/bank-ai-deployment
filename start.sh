@@ -1,19 +1,19 @@
 #!/bin/bash
 set -e
 
-# --- This script is for the bitnami/kafka image ---
+# --- This script is for the manual Kafka installation ---
 
 echo "--- Starting Zookeeper in background ---"
-/opt/bitnami/kafka/bin/zookeeper-server-start.sh /opt/bitnami/kafka/config/zookeeper.properties &
+/opt/kafka/bin/zookeeper-server-start.sh /opt/kafka/config/zookeeper.properties &
 
 echo "--- Starting Kafka in background ---"
-/opt/bitnami/kafka/bin/kafka-server-start.sh /opt/bitnami/kafka/config/server.properties &
+/opt/kafka/bin/kafka-server-start.sh /opt/kafka/config/server.properties &
 
 echo "--- Waiting for Kafka to be ready... ---"
 i=0
 while ! nc -z localhost 9092; do
-  i=$((i+1))
-  if [ $i -ge 12 ]; then
+  i=$((i+1 ))
+  if [ $i -ge 20 ]; then # Increased timeout to 100 seconds
     echo "Kafka did not start in time. Exiting."
     exit 1
   fi
