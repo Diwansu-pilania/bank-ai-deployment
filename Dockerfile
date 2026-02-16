@@ -1,22 +1,22 @@
-# Dockerfile for the Financial Stress AI Application
+# Start with the official Confluent platform image which has Kafka and Zookeeper
+FROM confluentinc/cp-platform:7.3.2
 
-# 1. Start with a standard Python base image
-FROM python:3.11-slim
-
-# 2. Set the working directory inside the container
+# Set the working directory
 WORKDIR /app
 
-# 3. Copy the requirements file first (for efficient caching)
-COPY requirements.txt .
-
-# 4. Install all Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# 5. Copy all of our project files into the container
-# This includes all .py, .csv, .pkl, and .zip files
+# Copy your application code into the container
 COPY . .
 
-# 6. Expose the port that our FastAPI server will run on
-EXPOSE 8000
+# Install Python and pip
+USER root
+RUN apt-get update && apt-get install -y python3 python3-pip
 
-# The CMD is set in the docker-compose.yml file, not here.
+# Install your Python dependencies
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Copy the startup script and make it executable
+COPY start.sh .
+RUN chmod +x start.sh
+
+# The command that Render will run
+CMD ["./start.sh"]
