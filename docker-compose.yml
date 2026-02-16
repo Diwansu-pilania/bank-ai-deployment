@@ -1,45 +1,75 @@
-# docker-compose.yml (Definitive Production Version)
 version: '3.8'
 
 services:
-  # Service 1: Zookeeper (Kafka's dependency)
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.2
+    hostname: zookeeper
     container_name: zookeeper
+    ports:
+      - "2181:2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
 
-  # Service 2: Kafka (The message broker)
   kafka:
     image: confluentinc/cp-kafka:7.3.2
+    hostname: kafka
     container_name: kafka
     depends_on:
       - zookeeper
     ports:
       - "9092:9092"
+      - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
 
-  # Service 3: The AI Application (API + Consumer)
-  # This service builds our Python code from the Dockerfile
+  # This is the main application service
   ai_app:
+    build: .
     container_name: ai_app
-    build: .  # This tells Docker to build the image from the Dockerfile in the current directory
     depends_on:
       - kafka
-    ports:
-      - "8000:8000" # Expose the API port to your local machine
+    # This tells Render to create a persistent disk named 'app_data'
+    # and mount it at the /app/data directory inside the container.
     volumes:
-      # This ensures the feature_store.json is persisted on your local machine
-      - ./feature_store.json:/app/feature_store.json
-    # We use a command that starts both the API and the Consumer in the same container
+      - app_data:/app/data
+    # The command to run all three python scripts
     command: >
-      sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 & python consumer.py"
+      sh -c "
+        echo '--- Starting API Server ---' &&
+        uvicorn main:app --host 0.0.0.0 --port 8000 &
+        
+        echo '--- Starting Kafka Consumer ---' &&
+        python consumer.py &
+        
+        echo '--- Starting Kafka Producer ---' &&
+        python producer.py &&
+        
+        wait -n
+      "
+    ports:
+      - "8000:8000"
 
+# This defines the persistent disk for Render
+volumes:
+  app_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/data/bank_ai_data # This is the path on Render's host machine
+
+x-render-persistent-disk:
+  app_data:
+    name: bank-ai-data
+    mountPath: /var/data/bank_ai_data
+    sizeGB: 5 # 5 GB persistent storage
