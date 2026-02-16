@@ -1,0 +1,45 @@
+# docker-compose.yml (Definitive Production Version)
+version: '3.8'
+
+services:
+  # Service 1: Zookeeper (Kafka's dependency)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.2
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  # Service 2: Kafka (The message broker)
+  kafka:
+    image: confluentinc/cp-kafka:7.3.2
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+  # Service 3: The AI Application (API + Consumer)
+  # This service builds our Python code from the Dockerfile
+  ai_app:
+    container_name: ai_app
+    build: .  # This tells Docker to build the image from the Dockerfile in the current directory
+    depends_on:
+      - kafka
+    ports:
+      - "8000:8000" # Expose the API port to your local machine
+    volumes:
+      # This ensures the feature_store.json is persisted on your local machine
+      - ./feature_store.json:/app/feature_store.json
+    # We use a command that starts both the API and the Consumer in the same container
+    command: >
+      sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 & python consumer.py"
+

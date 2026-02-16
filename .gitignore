@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.env
+venv/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Data Files - We don't want to commit large data files
+*.csv
+*.json
+
+# AI Models - These are large binary files
+*.pkl
+*.zip
+*.pth
+
+# System files
+.DS_Store
