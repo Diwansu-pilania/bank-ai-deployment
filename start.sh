@@ -1,19 +1,15 @@
 #!/bin/bash
-
-# Make this script exit if any command fails
 set -e
 
+# --- This script is for the bitnami/kafka image ---
+
 echo "--- Starting Zookeeper in background ---"
-/etc/confluent/docker/run &
+/opt/bitnami/kafka/bin/zookeeper-server-start.sh /opt/bitnami/kafka/config/zookeeper.properties &
 
 echo "--- Starting Kafka in background ---"
-# We need to configure Kafka to listen on localhost within the container
-export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
-/etc/confluent/docker/run &
+/opt/bitnami/kafka/bin/kafka-server-start.sh /opt/bitnami/kafka/config/server.properties &
 
 echo "--- Waiting for Kafka to be ready... ---"
-# This is a simple loop to wait for Kafka to start
-# It tries to connect every 5 seconds, up to 12 times (1 minute)
 i=0
 while ! nc -z localhost 9092; do
   i=$((i+1))
@@ -26,16 +22,12 @@ while ! nc -z localhost 9092; do
 done
 echo "--- Kafka is ready! ---"
 
-
 echo "--- Generating initial data if it doesn't exist ---"
-# This will run the data generation script only once
-python generate_rich_data.py
+python3 generate_rich_data.py
 
 echo "--- Starting the main application (API, Consumer, Producer) ---"
-# Start the main application components in the background
 uvicorn main:app --host 0.0.0.0 --port 8000 &
-python consumer.py &
-python producer.py
+python3 consumer.py &
+python3 producer.py
 
-# Keep the script running to keep the container alive
 wait -n
