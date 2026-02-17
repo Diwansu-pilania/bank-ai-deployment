@@ -4,11 +4,13 @@ FROM ubuntu:22.04
 # Set environment variables to prevent interactive prompts during installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# --- NEW: Add the Python local bin to the system's PATH ---
+# --- THIS LINE IS CRITICAL ---
 ENV PATH="/root/.local/bin:${PATH}"
 
 # Set the working directory
 WORKDIR /app
+
+# ... (baaki saari lines waisi hi rahengi) ...
 
 # Install essential tools, Java (for Kafka), Python, and netcat
 RUN apt-get update && \
