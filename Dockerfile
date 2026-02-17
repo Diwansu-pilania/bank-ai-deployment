@@ -4,6 +4,9 @@ FROM ubuntu:22.04
 # Set environment variables to prevent interactive prompts during installation
 ENV DEBIAN_FRONTEND=noninteractive
 
+# --- NEW: Add the Python local bin to the system's PATH ---
+ENV PATH="/root/.local/bin:${PATH}"
+
 # Set the working directory
 WORKDIR /app
 
@@ -13,7 +16,6 @@ RUN apt-get update && \
     apt-get clean
 
 # Download and extract Kafka
-# We are using a specific, stable version of Kafka
 RUN wget https://archive.apache.org/dist/kafka/3.5.0/kafka_2.13-3.5.0.tgz && \
     tar -xzf kafka_2.13-3.5.0.tgz && \
     mv kafka_2.13-3.5.0 /opt/kafka && \
