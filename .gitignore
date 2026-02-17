@@ -130,11 +130,3 @@ cython_debug/
 # PyCharm
 .idea/
 
-# Custom
-*.csv
-*.json
-*.pkl
-*.zip
-*.pth
-*.tmp
-ppo_financial_tensorboard/
