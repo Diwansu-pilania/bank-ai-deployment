@@ -1,106 +1,239 @@
-Bank AI - Project Structure & Flow of Activity
-1. Project Overview
-This project is a Real-time Financial Stress Prediction & Intervention System. It monitors customer transactions in real-time to detect early signs of financial distress and suggests interventions (like nudges or offers) to help the customer.
+# 🏦 BankAI — Real-Time Financial Stress Detection & Smart Intervention System
 
-2. Technical Architecture
-The system consists of five main components:
+> *Preventing financial crises before they happen.*
 
-Data Streaming Layer (Kafka Producer)
-Real-time Processing Engine (Kafka Consumer)
-AI/ML Core (XGBoost Predictor + GNN Features + RL Agent)
-API Layer (FastAPI)
-Interactive Dashboard (Frontend)
-3. Flow of Activity (Hackathon Playbook)
-Step 1: Data Simulation & Ingestion
-What happens: The 
-producer.py
- script mimics a live banking system.
-Action: It reads historical transaction data from 
-rich_transactions.csv
-.
-Process: Transactions are serialized into JSON and streamed transaction-by-transaction to a Kafka Topic (financial_transactions).
-Code Reference: 
-producer.py
-Step 2: Real-time Feature Extraction
-What happens: The 
-consumer.py
- script acts as the brain of the operation.
-Action: It listens to the Kafka topic for new transactions.
-Logic: For every new transaction:
-It identifies the customer.
-It updates their Feature Store in real-time (e.g., increments late_salary_count, updates spending_ratio).
-It combines these dynamic features with static Graph Neural Network (GNN) features (
-gnn_network_features.csv
-) which represent the customer's network relationships.
-Persistence: The updated state is saved to 
-feature_store.json
- essentially acting as a real-time database.
-Code Reference: 
-consumer.py
-Step 3: Financial Stress Prediction
-What happens: The system assesses the customer's financial health.
-Model: A pre-trained XGBoost Classifier (
-financial_stress_predictor.pkl
-) is loaded.
-Input: The model takes the current state from the Feature Store (7 key signals + GNN features).
-Output: It calculates a Financial Stress Score (probability akin to 0.0 to 1.0).
-Code Reference: 
-main.py
- (serving) & 
-consumer.py
- (updates)
-Step 4: API Serving
-What happens: The backend exposes the intelligence to the outside world.
-Tech: FastAPI (
-main.py
-).
-Endpoint: GET /customer/{customer_id}.
-Response: Returns the computed Stress Score, the detailed Key Signals (why the score is high), and the recent Transaction History.
-Step 5: User Dashboard (The Experience)
-What happens: Bank analysts or customers view the insights.
-UI: A clean HTML/JS dashboard (
+BankAI is an intelligent real-time banking assistant that continuously monitors customer transactions, detects early financial stress patterns, and automatically recommends the best intervention strategy using Machine Learning + Graph Intelligence + Reinforcement Learning.
+
+---
+
+## 🌍 Why This Matters
+
+Banks usually detect financial distress **after default happens**.
+
+BankAI changes the paradigm:
+
+**From Reactive Banking → To Preventive Banking**
+
+Instead of penalties, the system offers help:
+
+* Gentle nudges
+* Personalized offers
+* Human assistance
+* Risk prevention
+
+---
+
+## 🧠 Core Idea
+
+Every transaction tells a story.
+
+BankAI listens to that story in real time and answers:
+
+> **"Is this customer heading toward financial trouble?"**
+> **"What is the best action we should take now?"**
+
+---
+
+## 🏗️ System Architecture
+
+```
+Transactions → Kafka → Feature Engine → AI Models → API → Dashboard → Intervention
+```
+
+### Components
+
+| Layer                     | Technology      | Purpose                      |
+| ------------------------- | --------------- | ---------------------------- |
+| Data Streaming            | Kafka           | Live transaction ingestion   |
+| Processing Engine         | Python Consumer | Feature computation          |
+| Prediction Model          | XGBoost         | Financial stress probability |
+| Relationship Intelligence | GNN Features    | Social risk influence        |
+| Decision Maker            | RL Agent (PPO)  | Best intervention            |
+| Backend                   | FastAPI         | Exposes predictions          |
+| Frontend                  | HTML + JS       | Real-time dashboard          |
+
+---
+
+## 🔄 Activity Flow (How It Works)
+
+### 1️⃣ Live Transaction Simulation
+
+`producer.py`
+
+* Streams transactions from dataset
+* Sends JSON messages to Kafka topic `financial_transactions`
+
+---
+
+### 2️⃣ Real-Time Feature Engine
+
+`consumer.py`
+
+For each transaction:
+
+* Identify customer
+* Update behavioral signals
+* Merge network risk (GNN features)
+* Save to `feature_store.json`
+
+This acts as a **real-time behavioral database**
+
+---
+
+### 3️⃣ Financial Stress Prediction
+
+Model: `financial_stress_predictor.pkl` (XGBoost)
+
+Output:
+
+```
+Stress Score = 0.0 → 1.0
+0.00 - 0.39 → Healthy
+0.40 - 0.69 → Watchlist
+0.70 - 1.00 → Critical
+```
+
+---
+
+### 4️⃣ API Layer
+
+`main.py` — FastAPI
+
+Endpoint:
+
+```
+GET /customer/{customer_id}
+```
+
+Returns:
+
+* Stress Score
+* Risk Factors
+* Transaction History
+
+---
+
+### 5️⃣ Interactive Dashboard
+
+`static/index.html`
+
+Modes:
+🟢 Green → Safe
+🟠 Yellow → Risk Building
+🔴 Red → Immediate Attention
+
+Live updates as transactions stream.
+
+---
+
+### 6️⃣ Intelligent Intervention Agent
+
+`train_rl_agent.py`
+
+Reinforcement Learning decides best action:
+
+| Action | Meaning     |
+| ------ | ----------- |
+| 0      | Do Nothing  |
+| 1      | SMS Nudge   |
+| 2      | Email Offer |
+| 3      | Human Call  |
+
+Goal:
+**Minimize long-term financial stress, not just immediate risk**
+
+---
+
+## 📊 Key Behavioral Signals Used
+
+| Signal              | Meaning                    |
+| ------------------- | -------------------------- |
+| Late Salary         | Salary credited after 28th |
+| Balance Decline     | Weekly drop >10%           |
+| Lending App Usage   | Borrowing behavior         |
+| Late Utility        | Bills paid after due date  |
+| Discretionary Spend | Dining & lifestyle ratio   |
+| ATM Withdrawals     | Liquidity stress           |
+| Failed Debits       | Payment failures           |
+
+---
+
+## 🧪 How To Run (Demo Guide)
+
+### Step 1 — Start Kafka
+
+```
+zookeeper-server-start.sh config/zookeeper.properties
+kafka-server-start.sh config/server.properties
+```
+
+### Step 2 — Start Engine
+
+```
+python consumer.py
+```
+
+### Step 3 — Start API
+
+```
+uvicorn main:app --reload
+```
+
+### Step 4 — Open Dashboard
+
+Open:
+
+```
 static/index.html
-).
-Interaction:
-User enters a Customer ID (e.g., C0356).
-Dashboard polls the API.
-Standard Mode: Displays "Low Stress" (Green).
-Stress Mode: If the score is high, it turns Red and highlights risk factors (e.g., "3 Late Utility Payments").
-Code Reference: 
-static/app.js
-Step 6: Intelligent Intervention (The "So What?")
-What happens: The system decides how to help the customer.
-Agent: A Reinforcement Learning (PPO) agent (
-train_rl_agent.py
-).
-Logic: The agent observes the stress state and recommends an action:
-Action 0: Do Nothing
-Action 1: Send SMS Nudge
-Action 2: Send Email Offer
-Action 3: Human Call
-Goal: The agent is trained to choose the action that minimizes long-term stress for the customer.
-4. Key Data Signals
-The model uses these 7 key signals to predict stress:
+```
 
-Late Salary: Salary arriving after the 28th.
-Balance Decline: Consecutive weeks of balance dropping >10%.
-Lending App Usage: Transactions with known lending apps.
-Late Utility: Utility bills paid after the 16th.
-Discretionary Spend: Ratio of spending on dining/lifestyle.
-ATM Withdrawals: Frequency of cash withdrawals.
-Failed Debits: Count of bounced payments.
-5. How to Demo
-Start Zookeeper & Kafka.
-Run 
-consumer.py
- to start the engine.
-Run 
-main.py
- to start the API.
-Open 
-index.html
- in a browser.
-Run 
-producer.py
- to inject live data.
-Watch the dashboard update in real-time as stress scores change based on incoming traffic!
+### Step 5 — Inject Live Data
+
+```
+python producer.py
+```
+
+🎯 Now watch customer stress evolve live!
+
+---
+
+## 🧠 AI Stack
+
+* XGBoost → Predict financial stress
+* Graph Features → Social risk propagation
+* PPO Reinforcement Learning → Optimal intervention
+* FastAPI → Low latency serving
+* Kafka → Real-time ingestion
+
+---
+
+## 💡 Example Use Cases
+
+* Prevent loan defaults
+* Detect salary instability
+* Identify over-borrowing early
+* Offer proactive credit restructuring
+* Improve customer trust
+
+---
+
+## 🏁 Future Scope
+
+* WhatsApp bot integration
+* Credit score enhancement
+* Personalized financial coaching
+* Fraud + stress combined detection
+
+---
+
+## 👨‍💻 Team Vision
+
+We believe banking should **support customers, not punish them**.
+
+BankAI turns transaction data into care, guidance, and timely help.
+
+> *The best loan recovery is the one you never need.*
+
+---
+
+⭐ If you like this project — star the repo!
